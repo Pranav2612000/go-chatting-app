@@ -11,6 +11,10 @@ import (
 
 type Message struct {
   Text string `json:"text"`
+  currentClient *websocket.Conn
+}
+type ClientMessage struct {
+  Text string `json:"text"`
 }
 
 type hub struct {
@@ -40,14 +44,15 @@ func handler(ws *websocket.Conn, h *hub) {
 
   h.addClientChan <- ws
   for {
-    var m Message
-    err := websocket.JSON.Receive(ws, &m)
+    var c ClientMessage 
+    err := websocket.JSON.Receive(ws, &c)
     if err != nil {
-      h.broadcastChan <- Message{err.Error()}
+      h.broadcastChan <- Message{err.Error(), ws}
       h.removeClient(ws)
       return
     }
-    h.broadcastChan <- m
+    fmt.Println(c.Text)
+    h.broadcastChan <- Message{c.Text, ws}
   }
 }
 
@@ -84,7 +89,14 @@ func (h *hub) addClient(conn *websocket.Conn) {
 
 func (h *hub) broadcastMessage(m Message) {
   for _, conn := range h.clients {
-    err := websocket.JSON.Send(conn, m)
+    fmt.Println(conn)
+    if( conn == m.currentClient) {
+      continue
+    }
+    fmt.Println("curr:")
+    fmt.Println(m.currentClient)
+    fmt.Println(m.Text)
+    err := websocket.JSON.Send(conn,ClientMessage{m.Text})
     if err != nil {
       fmt.Println("Error broadcasting message: ", err)
       return
