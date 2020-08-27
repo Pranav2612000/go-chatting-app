@@ -10,11 +10,11 @@ import (
 )
 
 type Message struct {
-  Text string `json:"text"`
+  Text []rune `json:"text"`
   currentClient *websocket.Conn
 }
 type ClientMessage struct {
-  Text string `json:"text"`
+  Text []rune `json:"text"`
 }
 
 type hub struct {
@@ -47,7 +47,7 @@ func handler(ws *websocket.Conn, h *hub) {
     var c ClientMessage 
     err := websocket.JSON.Receive(ws, &c)
     if err != nil {
-      h.broadcastChan <- Message{err.Error(), ws}
+      h.broadcastChan <- Message{[]rune(err.Error()), ws}
       h.removeClient(ws)
       return
     }
@@ -93,9 +93,7 @@ func (h *hub) broadcastMessage(m Message) {
     if( conn == m.currentClient) {
       continue
     }
-    fmt.Println("curr:")
-    fmt.Println(m.currentClient)
-    fmt.Println(m.Text)
+    fmt.Println("Encrypted Message being passed: ", m.Text)
     err := websocket.JSON.Send(conn,ClientMessage{m.Text})
     if err != nil {
       fmt.Println("Error broadcasting message: ", err)
